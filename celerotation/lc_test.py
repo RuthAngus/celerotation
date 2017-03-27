@@ -3,6 +3,7 @@ Test Dan's celerite example on a real light curve.
 """
 
 import os
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -89,6 +90,7 @@ def make_plots(gp, x, y, yerr):
                      alpha=0.3, edgecolor="none")
     plt.xlabel("x")
     plt.ylabel("y")
+    plt.xlim(min(x), min(x) + 50)
     plt.savefig("{}_fit".format(id))
 
     omega = np.exp(np.linspace(-1, 3, 5000))
@@ -116,24 +118,22 @@ def make_plots(gp, x, y, yerr):
 
 if __name__ == "__main__":
 
-    # Load the data
-    id = 1430163
     LC_DIR = "/Users/ruthangus/.kplr/data/lightcurves/{}"\
         .format(str(id).zfill(9))
-    x, y, yerr = load_kepler_data(LC_DIR)
-    c = 5000  # Cut off after 1000 data points.
-    x, y, yerr = x[:c], y[:c], yerr[:c]
-    # x, yerr = x[:c], yerr[:c]
-    # y = np.sin(2*np.pi*x/10)
 
-    # plot the data
-    plt.clf()
-    plt.errorbar(x, y, yerr=yerr, fmt="k.")
-    plt.savefig("{}_lc".format(id))
+    # Load the data
+    id = 6269070
+    p_init = 20/6.
+
+    x, y, yerr = load_kepler_data(LC_DIR)
+    c = 20000  # Cut off after 1000 data points.
+    x, y, yerr = x[:c], y[:c], yerr[:c]
+    inds = np.argsort(x)
+    x, y, yerr = x[inds], y[inds], yerr[inds]
 
     # Define the kernel
     kernel = CustomTerm(log_a=np.log(np.var(y)), log_b=-5, log_tau=5,
-                        log_P=np.log(3.88))  # 3.88))
+                        log_P=np.log(p_init))
     print(kernel.get_parameter_vector())
 
     # Generate the covariance matrix.
@@ -153,27 +153,28 @@ if __name__ == "__main__":
     # print(gp.get_parameter_names())
 
     # Optimise the parameters.
+    start = time.time()
     r = minimize(neg_log_like, initial_params, method="L-BFGS-B",
                  bounds=bounds, args=(y, gp))
+    end = time.time()
+    print("time taken = ", end - start, "seconds")
     print(r.x)
-    print(np.exp(r.x[-1]))
+    print("Period = ", np.exp(r.x[-1]), "days")
     gp.set_parameter_vector(r.x)
     make_plots(gp, x, y, yerr)
 
-    assert 0
-
-    # Run emcee
-    ndim, nsteps = len(initial_params), 10000
-    nwalkers = 3*ndim
-    p0 = [1e-4*np.random.rand(ndim) + initial_params for i in range(nwalkers)]
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[y, gp])
-    pos, _, _ = sampler.run_mcmc(p0, 2000)
-    sampler.reset()
-    sampler.run_mcmc(pos, nsteps)
-    flat = np.reshape(sampler.chain, (nwalkers*nsteps, ndim))
-    fig = corner.corner(np.exp(flat), labels=["log_a", "log_b", "log_tau",
-                                              "log_P"])
-    fig.savefig("corner_celerite")
-    results = [np.median(np.exp(flat[:, 0])), np.median(np.exp(flat[:, 1])),
-               np.median(np.exp(flat[:, 2])), np.median(np.exp(flat[:, 3]))]
-    print(results)
+    # # Run emcee
+    # ndim, nsteps = len(initial_params), 10000
+    # nwalkers = 3*ndim
+    # p0 = [1e-4*np.random.rand(ndim) + initial_params for i in range(nwalkers)]
+    # sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[y, gp])
+    # pos, _, _ = sampler.run_mcmc(p0, 2000)
+    # sampler.reset()
+    # sampler.run_mcmc(pos, nsteps)
+    # flat = np.reshape(sampler.chain, (nwalkers*nsteps, ndim))
+    # fig = corner.corner(np.exp(flat), labels=["log_a", "log_b", "log_tau",
+    #                                           "log_P"])
+    # fig.savefig("corner_celerite")
+    # results = [np.median(np.exp(flat[:, 0])), np.median(np.exp(flat[:, 1])),
+    #            np.median(np.exp(flat[:, 2])), np.median(np.exp(flat[:, 3]))]
+    # print(results)
