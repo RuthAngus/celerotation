@@ -67,10 +67,11 @@ def neg_log_like(params, y, gp):
 
 def lnprior(params):
     log_a, log_b, log_tau, log_P = params
-    if -10 < log_a < 10 and -10 < log_b < 10 and -10 < log_tau < 10 \
-            and -10 < log_P < 10:
+    if -20 < log_a < 20 and -20 < log_b < 20 and -20 < log_tau < 120 \
+            and -20 < log_P < 20:
         return 0.
-    else: return -np.inf
+    else:
+        return -np.inf
 
 
 def lnprob(params, y, gp):
@@ -118,12 +119,14 @@ def make_plots(gp, x, y, yerr):
 
 if __name__ == "__main__":
 
+    # Load the data
+    # id = 6269070
+    # p_init = 20/6.
+    id = 2437965
+    p_init = 1.
+
     LC_DIR = "/Users/ruthangus/.kplr/data/lightcurves/{}"\
         .format(str(id).zfill(9))
-
-    # Load the data
-    id = 6269070
-    p_init = 20/6.
 
     x, y, yerr = load_kepler_data(LC_DIR)
     c = 20000  # Cut off after 1000 data points.
@@ -163,18 +166,20 @@ if __name__ == "__main__":
     gp.set_parameter_vector(r.x)
     make_plots(gp, x, y, yerr)
 
-    # # Run emcee
-    # ndim, nsteps = len(initial_params), 10000
-    # nwalkers = 3*ndim
-    # p0 = [1e-4*np.random.rand(ndim) + initial_params for i in range(nwalkers)]
-    # sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[y, gp])
-    # pos, _, _ = sampler.run_mcmc(p0, 2000)
-    # sampler.reset()
-    # sampler.run_mcmc(pos, nsteps)
-    # flat = np.reshape(sampler.chain, (nwalkers*nsteps, ndim))
-    # fig = corner.corner(np.exp(flat), labels=["log_a", "log_b", "log_tau",
-    #                                           "log_P"])
-    # fig.savefig("corner_celerite")
-    # results = [np.median(np.exp(flat[:, 0])), np.median(np.exp(flat[:, 1])),
-    #            np.median(np.exp(flat[:, 2])), np.median(np.exp(flat[:, 3]))]
-    # print(results)
+    initial_params = gp.get_parameter_vector()
+
+    # Run emcee
+    ndim, nsteps = len(initial_params), 10000
+    nwalkers = 3*ndim
+    p0 = [1e-4*np.random.rand(ndim) + initial_params for i in range(nwalkers)]
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[y, gp])
+    pos, _, _ = sampler.run_mcmc(p0, 2000)
+    sampler.reset()
+    sampler.run_mcmc(pos, nsteps)
+    flat = np.reshape(sampler.chain, (nwalkers*nsteps, ndim))
+    fig = corner.corner(np.exp(flat), labels=["log_a", "log_b", "log_tau",
+                                              "log_P"])
+    fig.savefig("corner_celerite")
+    results = [np.median(np.exp(flat[:, 0])), np.median(np.exp(flat[:, 1])),
+               np.median(np.exp(flat[:, 2])), np.median(np.exp(flat[:, 3]))]
+    print(results)

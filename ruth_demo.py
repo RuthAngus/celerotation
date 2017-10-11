@@ -22,9 +22,23 @@ import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from celerite import modeling
 
+import sys
+import kplr
+client = kplr.API()
+import kepler_data as kd
+
 # Download a light curve.
-kepid = 205117205
-sections, t, flux = get_light_curve(2, kepid)  # rotation
+kepid = int(sys.argv[1])  # 205117205
+
+if kepid >= 200000000:
+    sections, t, flux = get_light_curve(2, kepid)
+else:
+    # include sections in load_kepler_data, one section for each quarter.
+    kepstar = client.star(kepid)
+    kepstar.get_light_curves(fetch=True, short_cadence=False)
+    LC_DIR = "/Users/ruthangus/.kplr/data/lightcurves/{}".format(str(kepid)
+                                                                .zfill(9))
+    sections, t, flux, flux_err = kd.load_kepler_data(LC_DIR)
 
 flux0 = np.array(flux) - np.mean(flux)  # Mean subtract
 

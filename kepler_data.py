@@ -24,7 +24,7 @@ def load_kepler_data(LC_DIR):
     med = np.median(flux[m])
     y = flux[m]/med - 1
     yerr = flux_err[m]/med
-    sections = np.zeros(len(x))
+    sections = np.zeros(len(x), dtype=int)
     for i, fname in enumerate(fnames[1:]):
        hdulist = pyfits.open(fname)
        t = hdulist[1].data
@@ -38,6 +38,7 @@ def load_kepler_data(LC_DIR):
        med = np.median(flux[m])
        y = np.concatenate((y, flux[m]/med - 1))
        yerr = np.concatenate((yerr, flux_err[m]/med))
-       sections = np.concatenate((sections, np.zeros(len(time[m]) + i + 1))
+       sections = np.concatenate((sections, np.zeros(len(time[m]), dtype=int)
+                                  +i+1))
 
     return sections, x, y, yerr
