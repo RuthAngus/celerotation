@@ -39,6 +39,9 @@ else:
     LC_DIR = "/Users/ruthangus/.kplr/data/lightcurves/{}".format(str(kepid)
                                                                 .zfill(9))
     sections, t, flux, flux_err = kd.load_kepler_data(LC_DIR)
+    m = 2000
+    sections, t, flux = sections[:m], t[:m], flux[:m]
+    flux *= 1e4
 
 flux0 = np.array(flux) - np.mean(flux)  # Mean subtract
 
